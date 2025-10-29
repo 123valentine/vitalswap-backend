@@ -6,6 +6,7 @@ import html
 
 app = FastAPI()
 
+# ✅ Function to rename VitalBank → SwapForce
 def rename_keys(obj):
     if isinstance(obj, dict):
         return { (k.replace("VitalBank", "SwapForce") if isinstance(k, str) else k): rename_keys(v) for k, v in obj.items() }
@@ -14,11 +15,13 @@ def rename_keys(obj):
     else:
         return obj
 
+
+# ✅ Endpoint: /fees (HTML view)
 @app.get("/fees", response_class=HTMLResponse)
 async def fees_preview():
     api_url = "https://2kbbumlxz3.execute-api.us-east-1.amazonaws.com/fee/"
     data = {}
-    
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(api_url)
@@ -29,9 +32,9 @@ async def fees_preview():
         data = {"error": "Unable to fetch data from organizer API."}
 
     data = rename_keys(data)
-    
     json_str = html.escape(json.dumps(data, indent=4))
 
+    # ✅ HTML styling and clickable mockups
     html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -39,19 +42,40 @@ async def fees_preview():
         <meta charset="UTF-8">
         <title>SwapForce Fees Preview</title>
         <style>
-            body {{ background-color:#1e1e2f; color:#c5c8c6; font-family: monospace; padding:20px; }}
+            body {{ background-color:#0d1117; color:#c9d1d9; font-family: monospace; padding:20px; }}
+            h2 {{ color:#58a6ff; }}
+            pre {{ background:#161b22; padding:20px; border-radius:10px; }}
             .key {{ color:#ff79c6; }}
             .string {{ color:#f1fa8c; }}
             .number {{ color:#8be9fd; }}
             .brace {{ color:#50fa7b; }}
-            pre {{ white-space: pre-wrap; word-wrap: break-word; }}
-            a {{ color: #8be9fd; text-decoration: underline; }}
+            a {{ color:#58a6ff; text-decoration:none; }}
+            a:hover {{ text-decoration:underline; }}
+            .clickable-section {{ margin-top:30px; }}
+            button {{
+                background:#238636; color:white; border:none; border-radius:6px;
+                padding:10px 15px; font-size:16px; cursor:pointer;
+            }}
+            button:hover {{ background:#2ea043; }}
+            .tag {{ margin-top:30px; color:#8be9fd; font-style:italic; }}
         </style>
     </head>
     <body>
         <h2>SwapForce Fees (Live Preview)</h2>
-        <p>Click to open the organizer API directly: <a href="{api_url}" target="_blank">{api_url}</a></p>
+        <p>Fetches data from: <a href="{api_url}" target="_blank">{api_url}</a></p>
+        
         <pre id="json">{json_str}</pre>
+
+        <div class="clickable-section">
+            <h3>Clickable UI Mock (frontend integration)</h3>
+            <p>Below are visual elements that would connect to this endpoint in the real site:</p>
+            <button onclick="window.open('{api_url}', '_blank')">😊 Start Learning</button>
+            <button onclick="window.open('{api_url}', '_blank')">☹️ Learn More</button>
+            <button onclick="window.open('{api_url}', '_blank')">📊 Calculate Fees</button>
+        </div>
+
+        <p class="tag">Referral Tag: @Valley Mind AI</p>
+
         <script>
             const pre = document.getElementById('json');
             pre.innerHTML = pre.textContent
@@ -64,3 +88,13 @@ async def fees_preview():
     </html>
     """
     return html_content
+
+
+# ✅ Root endpoint to show info
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return """
+    <h2>Welcome to SwapForce Backend 🌐</h2>
+    <p>Visit <a href='http://127.0.0.1:8000/fees' target='_blank'>/fees</a> to view live data.</p>
+    <p>Referral: @Valley Mind AI</p>
+    """
